@@ -41,6 +41,11 @@ function (angular, _, config) {
       $scope.filterHits();
     };
 
+    $scope.addAllDashboards = function() {
+      $scope.playlist = _.union($scope.playlist, $scope.filteredHits);
+      $scope.filterHits();
+    };
+
     $scope.removeDashboard = function(dashboard) {
       $scope.playlist = _.without($scope.playlist, dashboard);
       $scope.filterHits();
