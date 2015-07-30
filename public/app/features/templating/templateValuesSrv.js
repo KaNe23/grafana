@@ -80,11 +80,11 @@ function (angular, _, kbn) {
 
       if (_.isArray(variable.current.value)) {
         variable.current.text = variable.current.value.join(' + ');
-        this.selectOptionsForCurrentValue(variable);
+        self.selectOptionsForCurrentValue(variable);
       }
 
       templateSrv.updateTemplateData();
-      return this.updateOptionsInChildVariables(variable);
+      return self.updateOptionsInChildVariables(variable);
     };
 
     this.variableUpdated = function(variable) {
@@ -148,7 +148,7 @@ function (angular, _, kbn) {
       }
 
       if (_.isArray(variable.current.value)) {
-        this.selectOptionsForCurrentValue(variable);
+        self.selectOptionsForCurrentValue(variable);
       } else {
         var currentOption = _.findWhere(variable.options, { text: variable.current.text });
         if (currentOption) {
@@ -223,24 +223,41 @@ function (angular, _, kbn) {
       }
 
       return _.map(_.keys(options).sort(), function(key) {
-        return { text: key, value: key };
+        var option = { text: key, value: key };
+
+        // check if values need to be regex escaped
+        if (self.shouldRegexEscape(variable)) {
+          option.value = self.regexEscape(option.value);
+        }
+
+        return option;
       });
+    };
+
+    this.shouldRegexEscape = function(variable) {
+      return (variable.includeAll || variable.multi) && variable.allFormat.indexOf('regex') !== -1;
+    };
+
+    this.regexEscape = function(value) {
+      return value.replace(/[-[\]{}()*+!<=:?.\/\\^$|#\s,]/g, '\\$&');
     };
 
     this.addAllOption = function(variable) {
       var allValue = '';
       switch(variable.allFormat) {
-        case 'wildcard':
-          allValue = '*';
+      case 'wildcard':
+        allValue = '*';
         break;
-        case 'regex wildcard':
-          allValue = '.*';
+      case 'regex wildcard':
+        allValue = '.*';
         break;
-        case 'regex values':
-          allValue = '(' + _.pluck(variable.options, 'text').join('|') + ')';
+      case 'regex values':
+        allValue = '(' + _.map(variable.options, function(option) {
+          return self.regexEscape(option.text);
+        }).join('|') + ')';
         break;
-        default:
-          allValue = '{';
+      default:
+        allValue = '{';
         allValue += _.pluck(variable.options, 'text').join(',');
         allValue += '}';
       }
